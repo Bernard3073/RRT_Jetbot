@@ -118,18 +118,18 @@ def euclidean_dist(goal_node, node): # Calculate cost to goal
     return dist
 
 
-def motion_model(orientation, step_size):
+def motion_model(orientation):
     orientation = np.deg2rad(orientation)
-    theta = np.deg2rad(45)
-    model = [[step_size * np.cos(2 * theta + orientation), step_size * np.sin(2 * theta + orientation), 1,
-              np.rad2deg(2 * theta + orientation)],  # 60
-             [step_size * np.cos(theta + orientation), step_size * np.sin(theta + orientation), 1,
-              np.rad2deg(theta + orientation)],  # 30
+    theta_rad = np.deg2rad(theta)
+    model = [[step_size * np.cos(2 * theta_rad + orientation), step_size * np.sin(2 * theta_rad + orientation), 1,
+              np.rad2deg(2 * theta_rad + orientation)],  # 90
+             [step_size * np.cos(theta_rad + orientation), step_size * np.sin(theta_rad + orientation), 1,
+              np.rad2deg(theta_rad + orientation)],  # 45
              [step_size * np.cos(orientation), step_size * np.sin(orientation), 1, np.rad2deg(orientation)],  # 0
-             [step_size * np.cos(-theta + orientation), step_size * np.sin(-theta + orientation), 1,
-              360 - np.rad2deg(-theta + orientation)],  # -30
-             [step_size * np.cos(-2 * theta + orientation), step_size * np.sin(-2 * theta + orientation), 1,
-              360 - np.rad2deg(-2 * theta + orientation)]  # -60
+             [step_size * np.cos(-theta_rad + orientation), step_size * np.sin(-theta_rad + orientation), 1,
+              360 - np.rad2deg(-theta_rad + orientation)],  # -45
+             [step_size * np.cos(-2 * theta_rad + orientation), step_size * np.sin(-2 * theta_rad + orientation), 1,
+              360 - np.rad2deg(-2 * theta_rad + orientation)]  # -90
              ]
 
     return model
@@ -160,7 +160,7 @@ def a_star(start_node, goal_node, step_size):
 
         # If goal node is reached, Break the while loop.
         # Add a threshold(circle) for the goal node
-        if (goal_node.x - cur.x) ** 2 + (goal_node.y - cur.y) ** 2 <= (1.5 * (step_size)) ** 2:
+        if (goal_node.x - cur.x) ** 2 + (goal_node.y - cur.y) ** 2 <= (1.5 * step_size) ** 2:
 
             goal_node.parent_index = cur.parent_index
             goal_node.cost = cur.cost
@@ -178,7 +178,7 @@ def a_star(start_node, goal_node, step_size):
         V[a][b][c] = 1
 
         # Initialize action set with orientation and step_size
-        motion = motion_model(orientation, step_size)
+        motion = motion_model(orientation)
 
         # Generate children of current node based on the action set.
         for i in range(len(motion)):
