@@ -24,7 +24,7 @@ step_size = 10
 
 # Class for storing node position, cost to come, parent index, and prev_orientation.
 class Node:
-    def __init__(self, x, y, radius, cost, parent_index, prev_orientation, curr_orientation):
+    def __init__(self, x, y, radius=0, cost=0, parent_index=-1, prev_orientation=0, curr_orientation=0):
         self.x = x
         self.y = y
         self.cost = cost
@@ -32,6 +32,7 @@ class Node:
         self.radius = radius
         self.prev_orientation = prev_orientation
         self.curr_orientation = curr_orientation
+        self.parent_node = None
 
 
 def move_check(child_node):  # Check if the move is allowed.
@@ -80,14 +81,6 @@ def obstacles_chk(NODE):
 def begin():  # Ask for user input of start and goal pos. Start and goal much be positive integers
     while True:
 
-        # start_x = 0
-        # start_y = 0
-        # start_theta = 0
-
-        # goal_x = 100
-        # goal_y = 200
-        # step_size = 10
-
         prev_orientation = start_theta
         # Initialize start and goal nodes from node class
         start_node = Node(start_x, start_y, 15, 0, -1, prev_orientation, prev_orientation)
@@ -135,13 +128,14 @@ def motion_model(orientation):
     return model
 
 
-def a_star(start_node, goal_node, step_size):
+def a_star(start_node, goal_node):
     # Initialize dictionaries
     path, distance, queue, visited = dict(), dict(), dict(), dict()
 
     queue[(start_node.x, start_node.y)] = start_node  # Initialize queue with startnode for Dijkstra algorithm.
     distance[(start_node.x, start_node.y)] = 0  # Initialize distance traveled.
 
+    # threshold for the matrix V
     threshold = 0.5
 
     # Dictionary for orientation
@@ -240,6 +234,92 @@ def a_star(start_node, goal_node, step_size):
     return path_x, path_y
 
 
+def get_nearest_node_index(node_list, rand_node):
+    # Generate a list to store the euclidean distance between all the nodes in node_list and the random node
+    dist_list = [(node.x - rand_node.x)**2 + (node.y - rand_node.y)**2
+                 for node in node_list]
+    min_index = dist_list.index(min(dist_list))
+    return min_index
+
+
+def calc_dist_angle(node_1, node_2):
+    d = euclidean_dist(node_2, node_1)
+    angle = np.arctan2((node_2.y - node_1.y), (node_2.x - node_1.x))
+    return d, angle
+
+
+def node_expansion(nearest_node, rand_node):
+    new_node = Node(nearest_node.x, nearest_node.y)
+    motion = motion_model(orientation=0)
+    node_path_x = [new_node.x]
+    node_path_y = [new_node.y]
+
+    dist, angle = calc_dist_angle(new_node, rand_node)
+
+    for i in range(len(motion)):
+        # next_x = round(new_node.x + motion[i][0], 3)
+        # next_y = round(new_node.y + motion[i][1], 3)
+        # next_node = Node(next_x, next_y)
+
+        # if move_check(next_node):  # Check if child is within the map or in an obstacle.
+        #     pass
+        # else:  # If out of bounds or an obstacle, restart loop and choose new node.
+        #     continue
+        next_x = new_node.x + motion[i][0]
+        next_y = new_node.y + motion[i][1]
+
+        plt.quiver(new_node.x, new_node.y, next_x - new_node.x, next_y - new_node.y,
+                   units='xy', scale=1, color='r',
+                   width=.1)
+        plt.pause(.0001)
+        new_node.x = next_x
+        new_node.y = next_y
+
+        node_path_x.append(new_node.x)
+        node_path_y.append(new_node.y)
+
+    dist = euclidean_dist(rand_node, new_node)
+    if dist <= step_size:
+        if not move_check(new_node):
+            node_path_x.append(rand_node.x)
+            node_path_y.append(rand_node.y)
+            new_node.x = rand_node.x
+            new_node.y = rand_node.y
+
+    new_node.parent_index = (new_node.x, new_node.y)
+    return new_node, node_path_x, node_path_y
+
+
+def visualize(node_list, node_path_x, node_path_y):
+    for i in range(len(node_list)):
+        if node_list[i].parent_index != -1:
+            plt.plot(node_path_x, node_path_y, "-g")
+    plt.pause(0.01)
+
+
+def rrt(start_node, goal_node):
+    node_list = [start_node]
+    max_iteration = 1000
+    for i in range(max_iteration):
+        rand_node = Node(random.randint(0, width), random.randint(0, height))
+        nearest_node_index = get_nearest_node_index(node_list, rand_node)
+        nearest_node = node_list[nearest_node_index]
+        next_node, node_path_x, node_path_y = node_expansion(nearest_node, rand_node)
+
+        if move_check(next_node):  # Check if child is within the map or in an obstacle.
+            pass
+        else:  # If out of bounds or an obstacle, restart loop and choose new node.
+            continue
+
+
+        node_list.append(next_node)
+
+        if euclidean_dist(node_list[-1], goal_node) <= step_size:
+            last_node = node_expansion(node_list[-1], goal_node)
+            if not move_check(last_node):
+                print("GOAL")
+
+
 def main():
     # set obstacle positions
     ox, oy = [], []
@@ -276,6 +356,8 @@ def main():
     plt.xlim([0, 400])
     plt.ylim([0, 300])
     plt.plot(ox, oy, ".k")
+    plt.plot(start_x, start_y, "xr")
+    plt.plot(goal_x, goal_y, "xr")
     plt.grid(True)
     plt.axis("equal")
 
@@ -283,11 +365,12 @@ def main():
     b = [goal_node.x, goal_node.y]
 
     if a != b:
-        path_x, path_y = a_star(start_node, goal_node, step_size)  # Call A star algorithm
-
-        plt.plot(path_x, path_y, "-g")
-        plt.pause(0.0001)
-        plt.show()
+        # path_x, path_y = a_star(start_node, goal_node)  # Call A star algorithm
+        #
+        # plt.plot(path_x, path_y, "-g")
+        # plt.pause(0.0001)
+        # plt.show()
+        rrt(start_node, goal_node)
 
     else:
         print("Start position equals the goal position.")
