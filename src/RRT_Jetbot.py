@@ -19,7 +19,7 @@ theta = 45
 goal_x = 200
 goal_y = 50
 start_theta = 0
-step_size = 10
+step_size = 20
 
 
 # Class for storing node position, cost to come, parent index, and prev_orientation.
@@ -255,28 +255,33 @@ def node_expansion(nearest_node, rand_node):
     node_path_y = [new_node.y]
 
     dist, angle = calc_dist_angle(new_node, rand_node)
+    angle = np.rad2deg(angle)
 
-    for i in range(len(motion)):
-        # next_x = round(new_node.x + motion[i][0], 3)
-        # next_y = round(new_node.y + motion[i][1], 3)
-        # next_node = Node(next_x, next_y)
+    # for i in range(len(motion)):
+    #     # next_x = round(new_node.x + motion[i][0], 3)
+    #     # next_y = round(new_node.y + motion[i][1], 3)
+    #     # next_node = Node(next_x, next_y)
+    #
+    #     # if move_check(next_node):  # Check if child is within the map or in an obstacle.
+    #     #     pass
+    #     # else:  # If out of bounds or an obstacle, restart loop and choose new node.
+    #     #     continue
+    #
+    # if abs(angle) == 90 or abs(angle) == 45 or angle == 0:
+    next_x = new_node.x + step_size*np.cos(angle)
+    next_y = new_node.y + step_size*np.sin(angle)
 
-        # if move_check(next_node):  # Check if child is within the map or in an obstacle.
-        #     pass
-        # else:  # If out of bounds or an obstacle, restart loop and choose new node.
-        #     continue
-        next_x = new_node.x + motion[i][0]
-        next_y = new_node.y + motion[i][1]
+    # Visualize path
+    plt.quiver(new_node.x, new_node.y, next_x - new_node.x, next_y - new_node.y,
+               units='xy', scale=1, color='r',
+               width=.1)
+    plt.pause(.0001)
 
-        plt.quiver(new_node.x, new_node.y, next_x - new_node.x, next_y - new_node.y,
-                   units='xy', scale=1, color='r',
-                   width=.1)
-        plt.pause(.0001)
-        new_node.x = next_x
-        new_node.y = next_y
+    new_node.x = next_x
+    new_node.y = next_y
 
-        node_path_x.append(new_node.x)
-        node_path_y.append(new_node.y)
+    node_path_x.append(new_node.x)
+    node_path_y.append(new_node.y)
 
     dist = euclidean_dist(rand_node, new_node)
     if dist <= step_size:
@@ -311,13 +316,18 @@ def rrt(start_node, goal_node):
         else:  # If out of bounds or an obstacle, restart loop and choose new node.
             continue
 
-
         node_list.append(next_node)
 
-        if euclidean_dist(node_list[-1], goal_node) <= step_size:
-            last_node = node_expansion(node_list[-1], goal_node)
-            if not move_check(last_node):
-                print("GOAL")
+        if euclidean_dist(node_list[-1], goal_node) <= step_size*1.25:
+            last_node, node_path_x, node_path_y = node_expansion(node_list[-1], goal_node)
+            print("GOAL")
+            # path = [[last_node.x, last_node.y]]
+            # node = node_list[-1]
+            # while node.parent_node is not None:
+            #     path.append([node.x, node.y])
+            #     node = node.parent_node
+            # path.append([node.x, node.y])
+            return 0
 
 
 def main():
