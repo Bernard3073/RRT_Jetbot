@@ -86,6 +86,7 @@ def begin():  # Ask for user input of start and goal pos. Start and goal much be
         start_node = Node(start_x, start_y, 15, 0, -1, prev_orientation, prev_orientation)
         goal_node = Node(goal_x, goal_y, 15, 0, -1, 0, 0)
 
+        start_node.cost = euclidean_dist(goal_node, start_node)
         # Check if obstacle
         if obstacles_chk(start_node):
             print("Start position is in an obstacle.")
@@ -126,7 +127,14 @@ def motion_model(orientation):
              ]
 
     return model
-
+"""
+RRT list (random order. size 1000)
+start from start point 
+generate actions based off action set
+pick points that are within a threshold of RRT list points and adds it to the visited list
+Picks the node with the loswet cost in visited list to generate next actions and repeat the above steps
+FIND GOAL
+"""
 
 def a_star(start_node, goal_node):
     # Initialize dictionaries
@@ -271,40 +279,36 @@ def node_expansion(nearest_node, rand_node):
     next_x = new_node.x + step_size*np.cos(angle)
     next_y = new_node.y + step_size*np.sin(angle)
 
-    # Visualize path
-    plt.quiver(new_node.x, new_node.y, next_x - new_node.x, next_y - new_node.y,
-               units='xy', scale=1, color='r',
-               width=.1)
-    plt.pause(.0001)
+    # # Visualize path
+    # plt.quiver(new_node.x, new_node.y, next_x - new_node.x, next_y - new_node.y,
+    #            units='xy', scale=1, color='r',
+    #            width=.1)
+    # plt.pause(.0001)
 
     new_node.x = next_x
     new_node.y = next_y
 
-    node_path_x.append(new_node.x)
-    node_path_y.append(new_node.y)
+    # node_path_x.append(new_node.x)
+    # node_path_y.append(new_node.y)
 
     dist = euclidean_dist(rand_node, new_node)
     if dist <= step_size:
-        if not move_check(new_node):
-            node_path_x.append(rand_node.x)
-            node_path_y.append(rand_node.y)
-            new_node.x = rand_node.x
-            new_node.y = rand_node.y
+        # if not move_check(new_node):
+        # node_path_x.append(rand_node.x)
+        # node_path_y.append(rand_node.y)
+        new_node.x = rand_node.x
+        new_node.y = rand_node.y
+
+    node_path_x.append(new_node.x)
+    node_path_y.append(new_node.y)
 
     new_node.parent_index = (new_node.x, new_node.y)
     return new_node, node_path_x, node_path_y
 
 
-def visualize(node_list, node_path_x, node_path_y):
-    for i in range(len(node_list)):
-        if node_list[i].parent_index != -1:
-            plt.plot(node_path_x, node_path_y, "-g")
-    plt.pause(0.01)
-
-
 def rrt(start_node, goal_node):
     node_list = [start_node]
-    max_iteration = 1000
+    max_iteration = 100
     for i in range(max_iteration):
         rand_node = Node(random.randint(0, width), random.randint(0, height))
         nearest_node_index = get_nearest_node_index(node_list, rand_node)
@@ -316,19 +320,36 @@ def rrt(start_node, goal_node):
         else:  # If out of bounds or an obstacle, restart loop and choose new node.
             continue
 
+        next_node.cost = euclidean_dist(goal_node, next_node)
+        next_node.parent_node = nearest_node
+
+        # Visualize path
+        plt.quiver(nearest_node.x, nearest_node.y, next_node.x - nearest_node.x, next_node.y - nearest_node.y,
+                units='xy', scale=1, color='r',
+                width=.1)
+        plt.pause(.0001)
+
         node_list.append(next_node)
 
-        if euclidean_dist(node_list[-1], goal_node) <= step_size*1.25:
-            last_node, node_path_x, node_path_y = node_expansion(node_list[-1], goal_node)
-            print("GOAL")
-            # path = [[last_node.x, last_node.y]]
-            # node = node_list[-1]
-            # while node.parent_node is not None:
-            #     path.append([node.x, node.y])
-            #     node = node.parent_node
-            # path.append([node.x, node.y])
-            return 0
+    return node_list
 
+def backtrack(start_node, node_list):
+  
+    node  = min(node_list, key=lambda o: o.cost) # goal
+    path = [node]
+    while node is not start_node:
+
+        parent = node.parent_node
+        path.append(parent)
+
+        # Visualize path
+        plt.quiver(parent.x, parent.y, node.x - parent.x, node.y - parent.y,
+                units='xy', scale=1, color='g',
+                width=.1)
+        plt.pause(.0001)
+
+        node = parent
+       
 
 def main():
     # set obstacle positions
@@ -380,7 +401,11 @@ def main():
         # plt.plot(path_x, path_y, "-g")
         # plt.pause(0.0001)
         # plt.show()
-        rrt(start_node, goal_node)
+        node_list = rrt(start_node, goal_node)
+        #Use node list in A*
+        backtrack(start_node, node_list)
+        print('done')
+        plt.show()
 
     else:
         print("Start position equals the goal position.")
