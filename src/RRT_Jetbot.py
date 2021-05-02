@@ -7,9 +7,10 @@
 from logging import shutdown
 import numpy as np
 import matplotlib.pyplot as plt
-# import rospy
+import rospy
 # from geometry_msgs.msg import Twist, Point
 import random
+from std_msgs.msg import String
 
 width = 400
 height = 300
@@ -20,6 +21,12 @@ goal_x = 200
 goal_y = 50
 start_theta = 0
 step_size = 20
+
+# Initialize your ROS node
+rospy.init_node("move_robot")
+# Set up a publisher to the /cmd_vel topic
+pub = rospy.Publisher("/jetbot_motors/cmd_str", String, queue_size=5) # (topic, data type, queue size)
+rate = rospy.Rate(4)  # 4 Hz
 
 
 # Class for storing node position, cost to come, parent index, and prev_orientation.
@@ -331,7 +338,35 @@ def backtrack(start_node, node_list):
         plt.pause(.0001)
 
         node = parent
-       
+    
+    path.reverse() # Start to goal
+    return path
+
+def move_bot(start_node, path):
+
+    current = start_node
+
+    for i in range(len(path)):
+
+        waypoint = path[i]
+        rotate = np.rad2deg(np.arctan2((waypoint.y - current.y), (waypoint.x - current.x)))
+        time = rotate / 90
+        if rotate > 0:
+            pub.publish("left")
+            rospy.sleep(time)
+            pub.publish("stop")
+
+        elif rotate < 0:
+            pub.publish("right")
+            rospy.sleep(time)
+            pub.publish("stop")
+        
+        pub.publish("forward")
+        rospy.sleep(1)
+        pub.publish("stop")
+
+
+
 
 def main():
     # set obstacle positions
@@ -385,7 +420,7 @@ def main():
         # plt.show()
         node_list = rrt(start_node, goal_node)
         #Use node list in A*
-        backtrack(start_node, node_list)
+        path = backtrack(start_node, node_list)
         print('done')
         plt.show()
 
@@ -395,3 +430,10 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+"""
+jetbot_motor.py edited maxpwn to be 1/4 speed.
+This reduced the motor speed by 1/4th.
+a 90 deg turn takes about 1 second.
+"""
