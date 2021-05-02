@@ -288,7 +288,7 @@ def node_expansion(nearest_node, rand_node):
 
 def rrt(start_node, goal_node):
     node_list = [start_node]
-    max_iteration = 1000
+    max_iteration = 100
     for i in range(max_iteration):
         rand_node = Node(random.randint(0, width), random.randint(0, height))
         nearest_node_index = get_nearest_node_index(node_list, rand_node)
@@ -345,18 +345,24 @@ def backtrack(start_node, node_list):
 def move_bot(start_node, path):
 
     current = start_node
+    prev_rotate = 0
 
     for i in range(len(path)):
 
         waypoint = path[i]
         rotate = np.rad2deg(np.arctan2((waypoint.y - current.y), (waypoint.x - current.x)))
-        time = rotate / 90
+        # # calc magnitude / stepsize    
+
         if rotate > 0:
+            rotate = abs(rotate) + prev_rotate
+            time = rotate / 90
             pub.publish("left")
             rospy.sleep(time)
             pub.publish("stop")
 
         elif rotate < 0:
+            rotate = abs(rotate) + prev_rotate
+            time = rotate / 90
             pub.publish("right")
             rospy.sleep(time)
             pub.publish("stop")
@@ -364,6 +370,15 @@ def move_bot(start_node, path):
         pub.publish("forward")
         rospy.sleep(1)
         pub.publish("stop")
+
+        current = waypoint
+
+        if rotate > 360:
+            prev_rotate = rotate - 360
+        else:
+            prev_rotate = rotate
+
+    print('done')
 
 
 
@@ -421,6 +436,7 @@ def main():
         node_list = rrt(start_node, goal_node)
         #Use node list in A*
         path = backtrack(start_node, node_list)
+        move_bot(start_node, path)
         print('done')
         plt.show()
 
