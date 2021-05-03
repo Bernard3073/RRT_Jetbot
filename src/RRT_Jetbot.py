@@ -12,15 +12,25 @@ import rospy
 import random
 from std_msgs.msg import String
 
-width = 400
-height = 300
-start_x = 0
-start_y = 0
+# width = 400
+# height = 300
+# start_x = 0
+# start_y = 0
+# theta = 45
+# goal_x = 200
+# goal_y = 50
+
+width = 248 # Units are inches
+height = 245
+start_x = 55
+start_y = 10
 theta = 45
-goal_x = 200
-goal_y = 50
+goal_x = 240
+goal_y = 120
+
 start_theta = 0
 step_size = 20
+jbot_clearance = 4
 
 # Initialize your ROS node
 rospy.init_node("move_robot")
@@ -60,30 +70,49 @@ def move_check(child_node):  # Check if the move is allowed.
 # Check if position is in Robot Adjusted obstacle space.
 # Obstacle space was expanded by a radius of 10 + 5 for clearance for a total of 15.
 # Warning obstacles appear larger than they are.
-def obstacles_chk(NODE):
-    node = [NODE.x, NODE.y]
-    # print(node)
-    # Rectangle
-    if (node[0] * 0.7) + 74.39 - 15 <= node[1] <= (node[0] * 0.7) + 98.568 + 15 \
-            and (node[0] * -1.428) + 176.554 - 15 <= node[1] <= (node[0] * -1.428) + 438.068 + 15:
+# def obstacles_chk(NODE):
+#     node = [NODE.x, NODE.y]
+#     # print(node)
+#     # Rectangle
+#     if (node[0] * 0.7) + 74.39 - 15 <= node[1] <= (node[0] * 0.7) + 98.568 + 15 \
+#             and (node[0] * -1.428) + 176.554 - 15 <= node[1] <= (node[0] * -1.428) + 438.068 + 15:
+#         return True
+
+#     # Circle
+#     elif (node[0] - 90) ** 2 + (node[1] - 70) ** 2 <= (35 + 15) ** 2:
+#         return True
+
+#     # Ellipse
+#     elif ((node[0] - 246) ** 2) / ((60 + 15) ** 2) + ((node[1] - 145) ** 2) / ((30 + 15) ** 2) <= 1:
+#         return True
+
+#     # 3 section Rectangular Area
+#     elif 200 - 15 <= node[0] <= 230 + 15 \
+#             and 230 - 15 <= node[1] <= 280 + 15:  # First section
+#         return True
+
+#     else:
+#         return False
+
+def obstacles_chk(node):
+
+    if node.x <= 40 + jbot_clearance and node.y <= 121 + jbot_clearance: # Obstacle 1
+        return True
+    
+    if node.x <= 26 + jbot_clearance: # Obstacle 2
         return True
 
-    # Circle
-    elif (node[0] - 90) ** 2 + (node[1] - 70) ** 2 <= (35 + 15) ** 2:
+    if node.x <= 119 + jbot_clearance and node.y >= 219 - jbot_clearance: # Obstacle 3
         return True
-
-    # Ellipse
-    elif ((node[0] - 246) ** 2) / ((60 + 15) ** 2) + ((node[1] - 145) ** 2) / ((30 + 15) ** 2) <= 1:
+    
+    if node.x >= 208 - jbot_clearance and node.y >= 136 - jbot_clearance: # Obstacle 4
         return True
-
-    # 3 section Rectangular Area
-    elif 200 - 15 <= node[0] <= 230 + 15 \
-            and 230 - 15 <= node[1] <= 280 + 15:  # First section
+    
+    if node.x >= 77 - jbot_clearance and node.y <= 74 + jbot_clearance: # Obstacle 5
         return True
-
-    else:
-        return False
-
+    
+    if node.x <= 89 + jbot_clearance and node.x >= 53 - jbot_clearance and node.y <= 182 + jbot_clearance and node.y >= 121 - jbot_clearance: # Obstacle 6
+        return True
 
 def begin():  # Ask for user input of start and goal pos. Start and goal much be positive integers
     while True:
@@ -288,7 +317,7 @@ def node_expansion(nearest_node, rand_node):
 
 def rrt(start_node, goal_node):
     node_list = [start_node]
-    max_iteration = 100
+    max_iteration = 1000
     for i in range(max_iteration):
         rand_node = Node(random.randint(0, width), random.randint(0, height))
         nearest_node_index = get_nearest_node_index(node_list, rand_node)
@@ -386,31 +415,55 @@ def move_bot(start_node, path):
 def main():
     # set obstacle positions
     ox, oy = [], []
-    for i in range(0, 400):
-        for j in range(0, 300):
-            # Circle
-            if (i - 90) ** 2 + (j - 70) ** 2 <= 35 ** 2:
+    for i in range(0, width):
+        for j in range(0, height):
+            # # Circle
+            # if (i - 90) ** 2 + (j - 70) ** 2 <= 35 ** 2:
+            #     ox.append(i)
+            #     oy.append(j)
+
+            # # Ellipse
+            # if ((i - 246) ** 2) / (60 ** 2) + (((j - 145) ** 2) / (30 ** 2)) <= 1:
+            #     ox.append(i)
+            #     oy.append(j)
+
+            # if (i * 0.7) + 74.39 <= j <= (i * 0.7) + 98.568 \
+            #         and (i * -1.428) + 176.554 <= j <= (i * -1.428) + 438.068:
+            #     ox.append(i)
+            #     oy.append(j)
+
+            # # 3 Section Rectangular Area
+            # if 200 <= i <= 210 and 230 <= j <= 280:
+            #     ox.append(i)
+            #     oy.append(j)
+            # if 210 <= i <= 230 and 270 <= j <= 280:
+            #     ox.append(i)
+            #     oy.append(j)
+            # if 210 <= i <= 230 and 230 <= j <= 240:
+            #     ox.append(i)
+            #     oy.append(j)
+
+            if i <= 40 + jbot_clearance and j <= 121 + jbot_clearance: # Obstacle 1
+                ox.append(i)
+                oy.append(j)
+            
+            if i <= 26 + jbot_clearance: # Obstacle 2
                 ox.append(i)
                 oy.append(j)
 
-            # Ellipse
-            if ((i - 246) ** 2) / (60 ** 2) + (((j - 145) ** 2) / (30 ** 2)) <= 1:
+            if i <= 119 + jbot_clearance and j >= 219 - jbot_clearance: # Obstacle 3
                 ox.append(i)
                 oy.append(j)
-
-            if (i * 0.7) + 74.39 <= j <= (i * 0.7) + 98.568 \
-                    and (i * -1.428) + 176.554 <= j <= (i * -1.428) + 438.068:
+            
+            if i >= 208 - jbot_clearance and j >= 136 - jbot_clearance: # Obstacle 4
                 ox.append(i)
                 oy.append(j)
-
-            # 3 Section Rectangular Area
-            if 200 <= i <= 210 and 230 <= j <= 280:
+            
+            if i >= 77 - jbot_clearance and j <= 74 + jbot_clearance: # Obstacle 5
                 ox.append(i)
                 oy.append(j)
-            if 210 <= i <= 230 and 270 <= j <= 280:
-                ox.append(i)
-                oy.append(j)
-            if 210 <= i <= 230 and 230 <= j <= 240:
+            
+            if i >= 53 - jbot_clearance and i <= 89 + jbot_clearance and j <= 182 + jbot_clearance and j >= 121 - jbot_clearance: # Obstacle 6
                 ox.append(i)
                 oy.append(j)
 
