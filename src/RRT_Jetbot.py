@@ -22,14 +22,14 @@ from std_msgs.msg import String
 
 width = 248 # Units are inches
 height = 245
-start_x = 58
-start_y = 10
+start_x = 150
+start_y = 150
 theta = 45
 goal_x = 208
 goal_y = 105
 
-start_theta = 90
-step_size = 20
+start_theta = 0
+step_size = 6
 jbot_clearance = 4
 
 # Initialize your ROS node
@@ -317,7 +317,7 @@ def node_expansion(nearest_node, rand_node):
 
 def rrt(start_node, goal_node):
     node_list = [start_node]
-    max_iteration = 1000
+    max_iteration = 500
     for i in range(max_iteration):
         rand_node = Node(random.randint(0, width), random.randint(0, height))
         nearest_node_index = get_nearest_node_index(node_list, rand_node)
@@ -329,7 +329,7 @@ def rrt(start_node, goal_node):
         else:  # If out of bounds or an obstacle, restart loop and choose new node.
             continue
 
-        next_node.cost = euclidean_dist(goal_node, next_node)
+        next_node.cost = euclidean_dist(goal_node, next_node) # Cost to go
         next_node.parent_node = nearest_node
 
         # Visualize path
@@ -397,7 +397,7 @@ def move_bot(start_node, path):
             pub.publish("stop")
         
         pub.publish("forward")
-        rospy.sleep(4)
+        rospy.sleep(1) # 1 second for a 6 inch move forward
         pub.publish("stop")
 
         current = waypoint
