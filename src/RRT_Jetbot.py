@@ -22,13 +22,13 @@ from std_msgs.msg import String
 
 width = 248 # Units are inches
 height = 245
-start_x = 55
+start_x = 58
 start_y = 10
 theta = 45
-goal_x = 240
-goal_y = 120
+goal_x = 208
+goal_y = 105
 
-start_theta = 0
+start_theta = 90
 step_size = 20
 jbot_clearance = 4
 
@@ -367,7 +367,7 @@ def backtrack(start_node, node_list):
         plt.pause(.0001)
 
         node = parent
-    
+    path.pop()
     path.reverse() # Start to goal
     return path
 
@@ -397,7 +397,7 @@ def move_bot(start_node, path):
             pub.publish("stop")
         
         pub.publish("forward")
-        rospy.sleep(1)
+        rospy.sleep(4)
         pub.publish("stop")
 
         current = waypoint
